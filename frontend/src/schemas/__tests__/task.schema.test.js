@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTaskSchema } from '../task.schema';
+import { createTaskSchema, updateTaskSchema } from '../task.schema';
 
 // Pruebas unitarias para validar las reglas del esquema Zod de tareas
 describe('Pruebas unitarias: createTaskSchema (Zod)', () => {
@@ -121,4 +121,68 @@ describe('Pruebas unitarias: createTaskSchema (Zod)', () => {
   //   const result = createTaskSchema.safeParse(invalidData);
   //   expect(result.success).toBe(true);
   // });
+});
+
+describe('Pruebas unitarias: updateTaskSchema (Zod)', () => {
+  it('valida título, descripción y estado correctos', () => {
+    const result = updateTaskSchema.safeParse({
+      title: 'Entregar laboratorio',
+      description: 'Revisar validaciones y pruebas.',
+      completed: true,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('acepta omitir descripción y estado completado', () => {
+    const result = updateTaskSchema.safeParse({ title: 'Estudiar React' });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('recorta espacios del título y la descripción', () => {
+    const result = updateTaskSchema.safeParse({
+      title: '  Revisar tareas  ',
+      description: '  Agregar pruebas  ',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.title).toBe('Revisar tareas');
+      expect(result.data.description).toBe('Agregar pruebas');
+    }
+  });
+
+  it('rechaza un título de menos de 3 caracteres con el mensaje esperado', () => {
+    const result = updateTaskSchema.safeParse({ title: 'AB' });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const titleError = result.error.issues.find((issue) => issue.path.includes('title'));
+      expect(titleError?.message).toBe('El título debe tener al menos 3 caracteres');
+    }
+  });
+
+  it('rechaza un título de más de 150 caracteres con el mensaje esperado', () => {
+    const result = updateTaskSchema.safeParse({ title: 'A'.repeat(151) });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const titleError = result.error.issues.find((issue) => issue.path.includes('title'));
+      expect(titleError?.message).toBe('El título no puede superar los 150 caracteres');
+    }
+  });
+
+  it('rechaza una descripción de más de 500 caracteres', () => {
+    const result = updateTaskSchema.safeParse({
+      title: 'Título válido',
+      description: 'X'.repeat(501),
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const descriptionError = result.error.issues.find((issue) => issue.path.includes('description'));
+      expect(descriptionError?.message).toBe('La descripción no puede superar los 500 caracteres');
+    }
+  });
 });
