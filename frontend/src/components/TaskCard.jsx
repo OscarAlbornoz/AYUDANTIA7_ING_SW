@@ -1,10 +1,5 @@
-import { useState } from 'react';
-import { EditTaskModal } from './EditTaskModal';
-
-export function TaskCard({ task, onToggle, onDelete, onTaskUpdated }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const { title, description, completed } = task;
-
+// Un componente es simplemente una función que recibe "props" (parámetros)
+export function TaskCard({ title, description, completed, onToggle, onDelete, onEdit }) {
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg flex flex-col justify-between transition hover:border-slate-500">
       <div>
@@ -35,13 +30,6 @@ export function TaskCard({ task, onToggle, onDelete, onTaskUpdated }) {
       {/* Botones de acción interactiva */}
       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-700/60 justify-end">
         <button
-          onClick={() => setIsEditing(true)}
-          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 transition cursor-pointer"
-        >
-          Editar
-        </button>
-
-        <button
           onClick={onToggle}
           className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
             completed
@@ -51,7 +39,15 @@ export function TaskCard({ task, onToggle, onDelete, onTaskUpdated }) {
         >
           {completed ? 'Marcar pendiente' : 'Marcar completada'}
         </button>
-
+        
+        {/* Editar */}
+        <button
+          onClick={onEdit}
+          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition cursor-pointer"
+        >
+          Editar
+        </button>
+      
         <button
           onClick={onDelete}
           className="text-xs px-3 py-1.5 rounded-lg font-medium bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition cursor-pointer"
@@ -59,14 +55,6 @@ export function TaskCard({ task, onToggle, onDelete, onTaskUpdated }) {
           Eliminar
         </button>
       </div>
-
-      {isEditing && (
-        <EditTaskModal
-          task={task}
-          onTaskUpdated={onTaskUpdated}
-          onClose={() => setIsEditing(false)}
-        />
-      )}
     </div>
   );
 }

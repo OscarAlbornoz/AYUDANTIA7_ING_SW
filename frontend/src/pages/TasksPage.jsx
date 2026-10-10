@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TaskCard } from '../components/TaskCard';
 import { CreateTaskForm } from '../components/CreateTaskForm';
+import { EditTaskModal } from '../components/EditTaskModal'; 
 import tasksService from '../services/tasks.service';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,23 +10,28 @@ export function TasksPage() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Estado para saber qué tarea editamos
+  const [editingTask, setEditingTask] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+
+  // Recibe un parámetro opcional para no mostrar la pantalla de carga al editar silenciosamente.
+  const fetchTasks = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const data = await tasksService.getAll();
+      setTasks(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error al obtener tareas:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Carga inicial de tareas del usuario autenticado desde el backend
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        const data = await tasksService.getAll();
-        setTasks(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error al obtener tareas:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTasks();
   }, []);
 
@@ -63,12 +69,6 @@ export function TasksPage() {
   // Agregar la nueva tarea al inicio de la lista
   const handleTaskCreated = (newTask) => {
     setTasks((prevTasks) => [newTask, ...prevTasks]);
-  };
-
-  const handleTaskUpdated = (updatedTask) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-    );
   };
 
   return (
@@ -111,19 +111,26 @@ export function TasksPage() {
           </div>
         )}
 
+        {successMsg && (
+          <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 p-3 rounded-xl mb-6 text-center text-sm font-medium">
+            {successMsg}
+          </div>
+        )}
+
         {/* Listado de tareas o aviso de lista vacía */}
         {!loading && !error && (
           <div className="space-y-4">
             {tasks.map((task) => (
               <TaskCard
                 key={task.id}
-                task={task}
+                title={task.title}
+                description={task.description}
+                completed={task.completed}
                 onToggle={() => handleToggle(task.id)}
                 onDelete={() => handleDelete(task.id)}
-                onTaskUpdated={handleTaskUpdated}
+                onEdit={() => setEditingTask(task)}
               />
             ))}
-
             {tasks.length === 0 && (
               <p className="text-center text-slate-500 py-8 border border-dashed border-slate-700 rounded-xl">
                 ¡No tienes tareas registradas!
@@ -132,6 +139,20 @@ export function TasksPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Edición */}
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onTaskUpdated={() => {
+            fetchTasks(false); 
+            setEditingTask(null); 
+            setSuccessMsg('Editado exitosamente');
+            setTimeout(() => setSuccessMsg(null), 3000);
+          }}
+          onClose={() => setEditingTask(null)} 
+        />
+      )}
     </div>
   );
 }

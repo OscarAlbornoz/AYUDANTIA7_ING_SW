@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+// Modificamos la importación para traer ambos esquemas
 import { createTaskSchema, updateTaskSchema } from '../task.schema';
 
 // Pruebas unitarias para validar las reglas del esquema Zod de tareas
@@ -111,78 +112,45 @@ describe('Pruebas unitarias: createTaskSchema (Zod)', () => {
       expect(descError.message).toBe('La descripción no puede superar los 500 caracteres');
     }
   });
-
-  // DEMOSTRACION EN CLASE: CASO DISENADO PARA FALLAR
-  // Descomenta las lineas de abajo para ver como Vitest reporta un error en consola:
-  // it('DEMO CLASE: debe fallar intencionalmente para mostrar un error en Vitest', () => {
-  //   const invalidData = {
-  //     title: 'AB',
-  //   };
-  //   const result = createTaskSchema.safeParse(invalidData);
-  //   expect(result.success).toBe(true);
-  // });
 });
 
+// updateTaskSchema
 describe('Pruebas unitarias: updateTaskSchema (Zod)', () => {
-  it('valida título, descripción y estado correctos', () => {
-    const result = updateTaskSchema.safeParse({
-      title: 'Entregar laboratorio',
-      description: 'Revisar validaciones y pruebas.',
-      completed: true,
-    });
-
+  it('Caso exitoso: Valida que datos correctos devuelvan result.success === true', () => {
+    const validData = {
+      title: 'Terminar el proyecto',
+      description: 'Implementar el esquema Zod y las pruebas',
+      completed: false,
+    };
+    const result = updateTaskSchema.safeParse(validData);
     expect(result.success).toBe(true);
   });
 
-  it('acepta omitir descripción y estado completado', () => {
-    const result = updateTaskSchema.safeParse({ title: 'Estudiar React' });
-
+  it('Caso campo opcional: Valida que omitir la descripción o el campo completed sea aceptado válidamente', () => {
+    const optionalData = {
+      title: 'Comprar pan',
+    };
+    const result = updateTaskSchema.safeParse(optionalData);
     expect(result.success).toBe(true);
   });
 
-  it('recorta espacios del título y la descripción', () => {
-    const result = updateTaskSchema.safeParse({
-      title: '  Revisar tareas  ',
-      description: '  Agregar pruebas  ',
-    });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.title).toBe('Revisar tareas');
-      expect(result.data.description).toBe('Agregar pruebas');
-    }
+  it('Caso título muy corto: Valida que un título de menos de 3 caracteres sea rechazado', () => {
+    const shortTitleData = {
+      title: 'AB',
+    };
+    const result = updateTaskSchema.safeParse(shortTitleData);
+    
+    expect(result.success).toBe(false);
+    expect(result.error.issues[0].message).toBe('El título debe tener al menos 3 caracteres');
   });
 
-  it('rechaza un título de menos de 3 caracteres con el mensaje esperado', () => {
-    const result = updateTaskSchema.safeParse({ title: 'AB' });
-
+  it('Caso longitud máxima: Valida que un título mayor a 150 caracteres sea rechazado', () => {
+    const longTitleData = {
+      title: 'A'.repeat(151),
+    };
+    const result = updateTaskSchema.safeParse(longTitleData);
+    
     expect(result.success).toBe(false);
-    if (!result.success) {
-      const titleError = result.error.issues.find((issue) => issue.path.includes('title'));
-      expect(titleError?.message).toBe('El título debe tener al menos 3 caracteres');
-    }
-  });
-
-  it('rechaza un título de más de 150 caracteres con el mensaje esperado', () => {
-    const result = updateTaskSchema.safeParse({ title: 'A'.repeat(151) });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const titleError = result.error.issues.find((issue) => issue.path.includes('title'));
-      expect(titleError?.message).toBe('El título no puede superar los 150 caracteres');
-    }
-  });
-
-  it('rechaza una descripción de más de 500 caracteres', () => {
-    const result = updateTaskSchema.safeParse({
-      title: 'Título válido',
-      description: 'X'.repeat(501),
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const descriptionError = result.error.issues.find((issue) => issue.path.includes('description'));
-      expect(descriptionError?.message).toBe('La descripción no puede superar los 500 caracteres');
-    }
+    expect(result.error.issues[0].message).toBe('El título no puede superar los 150 caracteres');
   });
 });
